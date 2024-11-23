@@ -2,58 +2,68 @@ import sys
 input = lambda: sys.stdin.readline().strip()
 
 n = int(input())
-cnt = [0] * (n + 1)
-arr = []
-for num in map(int, input().split()):
-    cnt[num] += 1
-    arr.append(cnt[num])
-
-tree = [[] for _ in range(4 * n)]
-
-def init(node, nl, nr):
-    if nl == nr:
-        tree[node].append(arr[nl])
-        return
-    
-    mid = nl + nr >> 1
-    init(node * 2, nl, mid)
-    init(node * 2 + 1, mid + 1, nr)
-
-    l, r = nl, mid + 1
-    left = tree[node * 2]
-    right = tree[node * 2 + 1]
-
-    while l < mid + 1 and r <= nr:
-        if left[l - nl] <= right[r - mid - 1]:
-            tree[node].append(left[l - nl])
-            l += 1
-
-        else:
-            tree[node].append(right[r - mid - 1])
-            r += 1
-
-    while l < mid + 1:
-        tree[node].append(left[l - nl])
-        l += 1
-
-    while r <= nr:
-        tree[node].append(right[r - mid - 1])
-        r += 1
-
-def query(node, nl, nr, sl, sr):
-    if nl > sr or sl > nr: return 0
-
-    if sl <= nl and nr <= sr:
-        return tree[node][-1]
-    
-    mid = nl + nr >> 1
-    x = query(node * 2, nl, mid, sl, sr)
-    y = query(node * 2 + 1, mid + 1, nr, sl, sr)
-
-    return max(x, y)
-
-init(1, 0, n - 1)
+sn = int(n ** 0.5)
+nums = [0] + list(map(int, input().split()))
 m = int(input())
-for _ in range(m):
-    i, j = map(int, input().split())
-    print(query(1, 0, n - 1, i - 1, j - 1))
+
+quries, ans = [], [0] * m
+for i in range(m):
+    a, b = map(int, input().split())
+    quries.append((a, b, i))
+
+quries.sort(key=lambda x: (x[0] // sn, x[1]))
+
+_ans = 0
+cnt = [0] * (int(1e5) + 1)
+cntcnt = [0] * (int(1e5) + 1)
+for i in range(quries[0][0], quries[0][1] + 1):
+    cntcnt[cnt[nums[i]]] -= 1
+    cnt[nums[i]] += 1
+    _ans = max(_ans, cnt[nums[i]])
+    cntcnt[cnt[nums[i]]] += 1
+
+ans[quries[0][2]] = _ans
+
+for i in range(1, m):
+    prev_s, prev_e, _ = quries[i - 1]
+    now_s, now_e, ans_idx = quries[i]
+
+    idx = prev_s
+    while idx < now_s:
+        if cntcnt[cnt[nums[idx]]] - 1 == 0 and cnt[nums[idx]] == _ans:
+            _ans -= 1
+
+        cntcnt[cnt[nums[idx]]] -= 1
+        cnt[nums[idx]] -= 1
+        cntcnt[cnt[nums[idx]]] += 1
+        idx += 1
+
+    idx = prev_s - 1    
+    while idx >= now_s:
+        cntcnt[cnt[nums[idx]]] -= 1
+        cnt[nums[idx]] += 1
+        _ans = max(_ans, cnt[nums[idx]])
+        cntcnt[cnt[nums[idx]]] += 1
+        idx -= 1
+
+    idx = prev_e + 1
+    while idx <= now_e:
+        cntcnt[cnt[nums[idx]]] -= 1
+        cnt[nums[idx]] += 1
+        _ans = max(_ans, cnt[nums[idx]])
+        cntcnt[cnt[nums[idx]]] += 1
+        idx += 1
+    
+    idx = prev_e
+    while idx > now_e:
+        if cntcnt[cnt[nums[idx]]] - 1 == 0 and cnt[nums[idx]] == _ans:
+            _ans -= 1
+
+        cntcnt[cnt[nums[idx]]] -= 1
+        cnt[nums[idx]] -= 1
+        cntcnt[cnt[nums[idx]]] += 1
+        idx -= 1
+
+    ans[ans_idx] = _ans
+
+print(*ans, sep='\n')
