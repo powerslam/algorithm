@@ -26,13 +26,15 @@ def query(node, nl, nr, v):
     return ret
 
 n = int(input())
+nums = sorted([int(input()) for _ in range(n)])
+order = list(map(int, input().split()))
+
 tree = [0] * 4 * (n + 100)
 init(1, 0, n - 1)
-arr = list(map(int, input().split()))
 ans = [0] * n
 
 for i in range(n - 1, -1, -1):
-    idx = query(1, 0, n - 1, arr[i] + 1)
-    ans[idx] = i + 1
-
-print(*ans[::-1])
+    idx = query(1, 0, n - 1, order[i] + 1)
+    ans[i] = nums[idx]
+    
+print(*ans, sep='\n')
