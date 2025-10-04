@@ -1,73 +1,54 @@
 import sys
+sys.setrecursionlimit(int(1e6))
+input = lambda: sys.stdin.readline().strip()
 
-input = sys.stdin.readline
+def dfs(x):
+    global id
+    id += 1
+    root[x] = id
+    st.append(x)
 
-n = int(input())
-nums = list(map(int, input().split()))
-tree = [0] * (n * 4)
-lazy = [0] * (n * 4)
+    res = root[x]
+    for nxt in adj[x]:
+        if root[nxt] == 0:
+            res = min(res, dfs(nxt))
+        elif not visited[nxt]:
+            res = min(res, root[nxt])
 
+    if res == root[x]:
+        scc = []
+        while True:
+            t = st.pop()
+            visited[t] = True
+            scc_id[t] = len(ans)
+            scc.append(t)
+            if t == x: break
+        ans.append(scc)
+    return res
 
-def init(node, start, end):
-    if start == end:
-        tree[node] = nums[start]
+t = int(input())
+for _ in range(t):
+    v, e = map(int, input().split())
+    adj = [[] for _ in range(v + 1)]
+    for _ in range(e):
+        a, b = map(int, input().split())
+        adj[a].append(b)
 
-    else:
-        mid = (start + end) // 2
-        tree[node] = init(node * 2, start, mid) + init(node * 2 + 1, mid + 1, end)
+    id = 0
+    root = [0] * (v + 1)
+    visited = [False] * (v + 1)
+    st, ans = [], []
+    scc_id = [0] * (v + 1)
 
-    return tree[node]
+    for i in range(1, v + 1):
+        if root[i] == 0:
+            dfs(i)
 
+    indeg = [0] * len(ans)
+    for u in range(1, v + 1):
+        for w in adj[u]:
+            if scc_id[u] != scc_id[w]:
+                indeg[scc_id[w]] += 1
 
-def update_lazy(node, start, end):
-    if lazy[node] != 0:
-        tree[node] += (end - start + 1) * lazy[node]
-        if start != end:
-            lazy[node * 2] += lazy[node]
-            lazy[node * 2 + 1] += lazy[node]
-        lazy[node] = 0
-
-
-def update_range(node, start, end, left, right, diff):
-    update_lazy(node, start, end)
-    if(left > end or right < start):
-        return
-
-    if(left <= start and end <= right):
-        tree[node] += (end - start + 1) * diff
-        if start != end:
-            lazy[node * 2] += diff
-            lazy[node * 2 + 1] += diff
-        return
-
-    mid = (start + end) // 2
-    update_range(node * 2, start, mid, left, right, diff)
-    update_range(node * 2 + 1, mid + 1, end, left, right, diff)
-    tree[node] = tree[node * 2] + tree[node * 2 + 1]
-
-
-def sum(node, start, end, left, right):
-    update_lazy(node, start, end)
-
-    if left > end or right < start:
-        return 0
-
-    if left <= start and end <= right:
-        return tree[node]
-
-    mid = (start + end) // 2
-    return sum(node * 2, start, mid, left, right) + sum(node * 2 + 1, mid + 1, end, left, right)
-
-m = int(input())
-
-init(1, 0, n - 1)
-for _ in range(m):
-    line = list(map(int, input().split()))
-
-    if line[0] == 1:
-        b, c, d = line[1:]
-        update_range(1, 0, n - 1, b - 1, c - 1, d)
-
-    else:
-        b = line[1]
-        print(sum(1, 0, n - 1, b - 1, b - 1))
+    result = sum(1 for d in indeg if d == 0)
+    print(result)
